@@ -13,8 +13,8 @@ const files = fs.readdirSync(inputDir);
 describe("templatify", () => {
   before(copyFiles);
 
-  files.forEach((file, index) => {
-    it(`should produce the expected output for file number ${index + 1}`, (done) => {
+  files.forEach((file/*, index*/) => {
+    it(`should produce the expected output for file ${file}`, (done) => {
       const expected = fs.readFileSync(`${outputDir}/${file}`, {encoding: "utf-8"});
       exec(`node ./templatify.js ${tempDir}/${file}`, (err) => {
         if (err) {
