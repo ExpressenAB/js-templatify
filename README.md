@@ -3,4 +3,4 @@ Simple tool for converting JS files to use template strings instead of concatena
 
 ## Usage
 
-node `<path_to_templatify>/templatify.js <path_to_js_file>`
+`node <path_to_templatify>/templatify.js <path_to_js_file>`
