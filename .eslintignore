@@ -1,0 +1,10 @@
+tmp/
+public/
+coverage/
+app/assets/js/vendor/**
+submodule/**
+logs/
+docs/
+test/input
+test/output
+test/tmp
