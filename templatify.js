@@ -16,7 +16,7 @@ concats.forEach((original) => {
 fs.writeFileSync(path, contents, "utf-8");
 
 function findStringConcatenations(content) {
-  const stringPattern = /(?=\(|=\s*)((.*\s?\+\s?)".*\")|(".*\"(\s?\+.*))(?=\);|;)/gmi;
+  const stringPattern = /(?=\(|=\s*)((.*\s?\+\s?)".*\")|(".*\"(\s?\+.*))(?=\);|;)/gi;
   const matches = content.match(stringPattern);
   if (!matches) {
     return [];
