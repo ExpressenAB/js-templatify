@@ -57,7 +57,7 @@ function replaceCode(originalConcat) {
         currentState.inCode = true;
       }
     }
-    //console.log(currentState.char + " " +currentState.inJoiningCode);
+
     if (i === 0) {
       result += "`";
     }
