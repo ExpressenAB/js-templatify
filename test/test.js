@@ -13,8 +13,8 @@ const files = fs.readdirSync(inputDir);
 describe("templatify", () => {
   before(copyFiles);
 
-  files.forEach((file) => {
-    it("should produce the expected output", (done) => {
+  files.forEach((file, index) => {
+    it(`should produce the expected output for file number ${index + 1}`, (done) => {
       const expected = fs.readFileSync(`${outputDir}/${file}`, {encoding: "utf-8"});
       exec(`node ./templatify.js ${tempDir}/${file}`, (err) => {
         if (err) {
@@ -29,25 +29,25 @@ describe("templatify", () => {
 });
 
 describe("replaceCode", () => {
-  it("1", () => {
+  it("should replace '\"hello \" + name' with template string", () => {
     const original = "\"hello \" + name";
     const result = helpers.replaceCode(original);
     result.should.equal("`hello ${name}`");
   });
 
-  it("2", () => {
+  it("should replace '\"hello \"+name' with template string", () => {
     const original = "\"hello \"+name";
     const result = helpers.replaceCode(original);
     result.should.equal("`hello ${name}`");
   });
 
-  it("3", () => {
+  it("should replace 'name + \" is your name\"' with template string", () => {
     const original = "name + \" is your name\"";
     const result = helpers.replaceCode(original);
     result.should.equal("`${name} is your name`");
   });
 
-  it("4", () => {
+  it("should replace '\"Hi there \" + name + \", how are you?\"' with template string", () => {
     const original = "\"Hi there \" + name + \", how are you?\"";
     const result = helpers.replaceCode(original);
     result.should.equal("`Hi there ${name}, how are you?`");
