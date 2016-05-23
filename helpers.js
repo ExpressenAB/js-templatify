@@ -9,7 +9,8 @@ function replaceCode(originalConcat) {
     inCode: false,
     inJoiningCode: false,
     char: undefined,
-    lastChar: false
+    lastChar: false,
+    inFunctionCall: false
   };
   let currentState = {
     inString: false,
@@ -18,7 +19,8 @@ function replaceCode(originalConcat) {
     inCode: false,
     inJoiningCode: false,
     char: undefined,
-    lastChar: false
+    lastChar: false,
+    inFunctionCall: false
   };
   for (let i = 0; i < originalConcat.length; i++) {
     previousState = currentState;
@@ -29,7 +31,8 @@ function replaceCode(originalConcat) {
       inCode: previousState.inCode,
       inJoiningCode: previousState.inJoiningCode,
       char: originalConcat[i],
-      lastChar: i === originalConcat.length - 1
+      lastChar: i === originalConcat.length - 1,
+      inFunctionCall: previousState.inFunctionCall
     };
     if (currentState.char === "\"") {
       currentState.inString = true;
@@ -49,14 +52,23 @@ function replaceCode(originalConcat) {
     }
 
     if (!currentState.inString) {
-      if (currentState.char === " " || currentState.char === "+") {
+      if (!currentState.inFunctionCall && (currentState.char === " " || currentState.char === "+")) {
         currentState.inJoiningCode = true;
         currentState.inCode = false;
       } else {
+        if (currentState.char === "(") {
+          currentState.inFunctionCall = true;
+        }
+        if (currentState.char === ")") {
+          currentState.inFunctionCall = false;
+        }
         currentState.inJoiningCode = false;
         currentState.inCode = true;
       }
     }
+
+    // console.log(currentState.char);
+    // console.log(currentState.inCode);
 
     if (i === 0) {
       result += "`";

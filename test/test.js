@@ -52,6 +52,12 @@ describe("replaceCode", () => {
     const result = helpers.replaceCode(original);
     result.should.equal("`Hi there ${name}, how are you?`");
   });
+
+  it("should replace '\"Hello there \" + doStuff(a, b)' with template string", () => {
+    const original = "\"Hello there \" + doStuff(a, b)";
+    const result = helpers.replaceCode(original);
+    result.should.equal("`Hello there ${doStuff(a, b)}`");
+  });
 });
 
 function copyFiles(callback) {
