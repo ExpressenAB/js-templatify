@@ -16,12 +16,12 @@ concats.forEach((original) => {
 fs.writeFileSync(path, contents, "utf-8");
 
 function findStringConcatenations(content) {
-  const stringPattern = /(?=\(|=\s*)((.*\s?\+\s?)".*\")|(".*\"(\s?\+.*))(?=\);|;)/gi;
+  const stringPattern = /(?=\(|=\s*)((.*\s?\+\s?)"[^\"]*\")|("[^\"]*\"(\s?\+.*))(?=\);|;)/gi;
   const matches = content.match(stringPattern);
   if (!matches) {
     return [];
   }
   return content.match(stringPattern).map((match) => {
-    return match.replace(/^=\s?/, "").replace(/^\(/, "");
+    return match.replace(/^=\s?/, "").replace(/^\(/, "").replace(/\)\)/, ")");
   });
 }
