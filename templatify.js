@@ -1,10 +1,11 @@
 "use strict";
+/* eslint-disable no-console */
 const fs = require("fs");
 const path = process.argv[2];
 const helpers = require("./helpers");
 let contents = fs.readFileSync(path, "utf-8");
 
-const concats = findStringConcatenations(contents);
+const concats = helpers.findStringConcatenations(contents);
 
 concats.forEach((original) => {
   let modified = original;
@@ -16,14 +17,3 @@ concats.forEach((original) => {
 });
 
 fs.writeFileSync(path, contents, "utf-8");
-
-function findStringConcatenations(content) {
-  const stringPattern = /(?=\(|=\s*)((.*\s?\+\s?)"[^\"]*\")|("[^\"]*\"(\s?\+.*))(?=\);|;)/gi;
-  const matches = content.match(stringPattern);
-  if (!matches) {
-    return [];
-  }
-  return content.match(stringPattern).map((match) => {
-    return match.replace(/^=\s?/, "").replace(/^\(/, "").replace(/\)\)/, ")");
-  });
-}

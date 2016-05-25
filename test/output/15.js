@@ -1,0 +1,1 @@
+return res.status(404).json({message: `Bad url for dynamic type: ${type}`});
