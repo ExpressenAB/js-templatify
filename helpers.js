@@ -67,8 +67,8 @@ function replaceCode(originalConcat) {
       }
     }
 
-    console.log(currentState.char);
-    console.log(currentState.inCode);
+    // console.log(currentState.char);
+    // console.log(currentState.inCode);
 
     if (i === 0) {
       result += "`";
