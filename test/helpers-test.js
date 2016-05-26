@@ -81,6 +81,7 @@ describe("helpers.findStringConcatenations", () => {
     { input: "myFunc(\"Hello there, your name is: \" + name, myVar);", expected: "\"Hello there, your name is: \" + name" },
     { input: "myFunc(myVar, \"Hello there, your name is: \" + name);", expected: "\"Hello there, your name is: \" + name" },
     { input: "myFunc(\"nice \" + nesting(\"of \" + stuff), myVar);", expected: "\"nice \" + nesting(\"of \" + stuff)" },
+    { input: "(myOtherFunc(\"Hello \" + name))", expected: "\"Hello \" + name" },
     { input: "res.setHeader(\"cache-control\", \"public, max-age=\" + maxAge(source, mapped));", expected: "\"public, max-age=\" + maxAge(source, mapped)" },
     { input: "var message = { greeting: \"Hello \" + name };", expected: "\"Hello \" + name" },
     { input: "var message = {\ngreeting: \"Hello \" + name\n};", expected: "\"Hello \" + name" },

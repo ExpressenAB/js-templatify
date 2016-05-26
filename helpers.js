@@ -1,4 +1,5 @@
 "use strict";
+const jsep = require("jsep");
 
 function replaceCode(originalConcat) {
   let result = "";
@@ -94,20 +95,25 @@ function replaceCode(originalConcat) {
 }
 
 function findStringConcatenations(content) {
-  let results = findAssignments(content).concat(findFunctionParams(content)).filter((assignment) => {
-    return assignment.match(/(\+\s?")|("\s?\+)/gi);
-  });
+  let results = [];
+  const lines = content.split("\n");
+  lines.forEach((line) => {
+    let lineResults = findAssignments(line).concat(findFunctionParams(line)).filter((assignment) => {
+      return assignment.match(/(\+\s?")|("\s?\+)/gi);
+    });
 
-  const returnValues = findReturnValues(content).filter((returnValue) => {
-    for (let i = 0; i < results.length; i++) { // Exclude return values which are already handled by assignments or function calls
-      if (returnValue.indexOf(results[i]) > -1) {
-        return false;
+    const returnValues = findReturnValues(line).filter((returnValue) => {
+      for (let i = 0; i < lineResults.length; i++) { // Exclude return values which are already handled by assignments or function calls
+        if (returnValue.indexOf(lineResults[i]) > -1) {
+          return false;
+        }
       }
-    }
 
-    return returnValue.match(/(\+\s?")|("\s?\+)/gi);
+      return returnValue.match(/(\+\s?")|("\s?\+)/gi);
+    });
+    lineResults = lineResults.concat(returnValues);
+    results = results.concat(lineResults);
   });
-  results = results.concat(returnValues);
 
   return results;
 }
@@ -175,9 +181,13 @@ function findAssignments(content) {
       startOfAssignment = i;
     }
 
-    if ((currentState.char === ";" || currentState.char === "}") && !currentState.inString && startOfAssignment > -1) { // TODO: Check not in string
+    if ((currentState.char === ";" || currentState.char === "}" || currentState.lastChar) && !currentState.inString && startOfAssignment > -1) { // TODO: Check not in string
       currentState.inAssignment = false;
-      results.push(content.slice(startOfAssignment + 1, i).trim());
+      let endIndex = i;
+      if (currentState.lastChar && currentState.char !== ";" && currentState.char !== "}") {
+        endIndex = content.length;
+      }
+      results.push(content.slice(startOfAssignment + 1, endIndex).trim());
       startOfAssignment = -1;
     }
   }
@@ -259,8 +269,20 @@ function findFunctionParams(content) {
         if (currentState.char === ")") {
           currentState.inFunctionCall = false;
           if (startOfParameter > -1 && openParenthesis === 1) {
-            results.push(content.slice(startOfParameter + 1, i).trim());
-            startOfParameter = -1;
+            const candidate = content.slice(startOfParameter + 1, i).trim();
+            try {
+              const parsedCandidate = jsep(candidate);
+              if (parsedCandidate.type === "BinaryExpression") {
+                results.push(candidate);
+                startOfParameter = -1;
+              } else {
+                // That's not a binary expression! Let's see if we can find one inside it.
+                const nested = findFunctionParams(candidate);
+                nested.forEach((n) => {
+                  results.push(n);
+                });
+              }
+            } catch (err) {} // eslint-disable-line no-empty
           }
           openParenthesis--;
         }
