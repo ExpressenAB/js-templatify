@@ -270,19 +270,16 @@ function findFunctionParams(content) {
           currentState.inFunctionCall = false;
           if (startOfParameter > -1 && openParenthesis === 1) {
             const candidate = content.slice(startOfParameter + 1, i).trim();
-            try {
-              const parsedCandidate = jsep(candidate);
-              if (parsedCandidate.type === "BinaryExpression") {
-                results.push(candidate);
-                startOfParameter = -1;
-              } else {
-                // That's not a binary expression! Let's see if we can find one inside it.
-                const nested = findFunctionParams(candidate);
-                nested.forEach((n) => {
-                  results.push(n);
-                });
-              }
-            } catch (err) {} // eslint-disable-line no-empty
+            if (isStringConcat(candidate)) {
+              results.push(candidate);
+              startOfParameter = -1;
+            } else {
+              // That's not a binary expression! Let's see if we can find one inside it.
+              const nested = findFunctionParams(candidate);
+              nested.forEach((n) => {
+                results.push(n);
+              });
+            }
           }
           openParenthesis--;
         }
@@ -302,13 +299,51 @@ function findFunctionParams(content) {
 }
 
 function findReturnValues(content) {
-  const matches = content.match(/(?=return\s*).*(?=;)/gi);
+  let matches = content.match(/(?=return\s*).*(?=;)/gi);
   if (!matches) {
     return [];
   }
-  return matches.map((match) => {
+  matches = matches.map((match) => {
     return match.replace(/^return\s*/gi, "");
   });
+
+  return matches.filter((match) => {
+    const candidate = match.replace(/^return\s*/gi, "");
+    return isStringConcat(candidate);
+  });
+}
+
+function isStringConcat(content) {
+  try {
+    const parsedCandidate = jsep(content);
+    return isStringConcatExpression(parsedCandidate);
+  } catch (err) {
+    return false;
+  }
+}
+
+function isStringConcatExpression(expression) {
+  if (expression.type !== "BinaryExpression") {
+    return false;
+  }
+
+  if (expression.left.type === "Literal" && typeof expression.left.value === "string") {
+    return true;
+  }
+
+  if (expression.right.type === "Literal" && typeof expression.right.value === "string") {
+    return true;
+  }
+
+  if (isStringConcatExpression(expression.left)) {
+    return true;
+  }
+
+  if (isStringConcatExpression(expression.right)) {
+    return true;
+  }
+
+  return false;
 }
 
 module.exports = {
