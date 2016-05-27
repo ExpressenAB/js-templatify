@@ -1,5 +1,5 @@
 "use strict";
-const jsep = require("jsep");
+const acorn = require("acorn");
 
 function replaceCode(originalConcat) {
   let result = "";
@@ -95,255 +95,142 @@ function replaceCode(originalConcat) {
 }
 
 function findStringConcatenations(content) {
-  let results = [];
-  const lines = content.split("\n");
-  lines.forEach((line) => {
-    let lineResults = findAssignments(line).concat(findFunctionParams(line)).filter((assignment) => {
-      return assignment.match(/(\+\s?")|("\s?\+)/gi);
-    });
-
-    const returnValues = findReturnValues(line).filter((returnValue) => {
-      for (let i = 0; i < lineResults.length; i++) { // Exclude return values which are already handled by assignments or function calls
-        if (returnValue.indexOf(lineResults[i]) > -1) {
-          return false;
-        }
-      }
-
-      return returnValue.match(/(\+\s?")|("\s?\+)/gi);
-    });
-    lineResults = lineResults.concat(returnValues);
-    results = results.concat(lineResults);
+  const parsed = acorn.parse(content, { locations: true, allowReturnOutsideFunction: true });
+  const nodes = findInNode(parsed);
+  const extracted = nodes.map((node) => {
+    return content.slice(node.start, node.end);
   });
 
-  return results;
+  return extracted.filter((extractedConcat) => {
+    return extractedConcat.indexOf("\n") === -1;
+  });
 }
 
-function findAssignments(content) {
-  const results = [];
-  let previousState = {
-    inString: false,
-    openingString: false,
-    closingString: false,
-    inCode: false,
-    inJoiningCode: false,
-    char: undefined,
-    lastChar: false,
-    inFunctionCall: false,
-    inAssignment: false
-  };
-  let currentState = {
-    inString: false,
-    openingString: false,
-    closingString: false,
-    inCode: false,
-    inJoiningCode: false,
-    char: undefined,
-    lastChar: false,
-    inFunctionCall: false,
-    inAssignment: false
-  };
-
-  let startOfAssignment = -1;
-
-  for (let i = 0; i < content.length; i++) {
-    previousState = currentState;
-    currentState = {
-      inString: previousState.inString,
-      openingString: false,
-      closingString: false,
-      inCode: previousState.inCode,
-      inJoiningCode: previousState.inJoiningCode,
-      char: content[i],
-      lastChar: i === content.length - 1,
-      inFunctionCall: previousState.inFunctionCall,
-      inAssignment: previousState.inAssignment
-    };
-
-    if (currentState.char === "\"") {
-      currentState.inString = true;
-      currentState.inCode = false;
-      currentState.inJoiningCode = false;
-      if (previousState.inString) {
-        currentState.closingString = true;
-      } else {
-        currentState.openingString = true;
-      }
-    }
-
-    if (previousState.closingString) {
-      currentState.inString = false;
-      currentState.inCode = false;
-      currentState.inJoiningCode = false;
-    }
-
-    if ((currentState.char === "=" || currentState.char === ":") && !currentState.inString) { // TODO: Check not in string
-      currentState.inAssignment = true;
-      startOfAssignment = i;
-    }
-
-    if ((currentState.char === ";" || currentState.char === "}" || currentState.lastChar) && !currentState.inString && startOfAssignment > -1) { // TODO: Check not in string
-      currentState.inAssignment = false;
-      let endIndex = i;
-      if (currentState.lastChar && currentState.char !== ";" && currentState.char !== "}") {
-        endIndex = content.length;
-      }
-      results.push(content.slice(startOfAssignment + 1, endIndex).trim());
-      startOfAssignment = -1;
-    }
-  }
-
-  return results;
-}
-
-function findFunctionParams(content) {
-  const results = [];
-  let previousState = {
-    inString: false,
-    openingString: false,
-    closingString: false,
-    inCode: false,
-    inJoiningCode: false,
-    char: undefined,
-    lastChar: false,
-    inFunctionCall: false,
-    inAssignment: false
-  };
-  let currentState = {
-    inString: false,
-    openingString: false,
-    closingString: false,
-    inCode: false,
-    inJoiningCode: false,
-    char: undefined,
-    lastChar: false,
-    inFunctionCall: false,
-    inAssignment: false
-  };
-
-  let startOfParameter = -1;
-  let openParenthesis = 0;
-
-  for (let i = 0; i < content.length; i++) {
-    previousState = currentState;
-    currentState = {
-      inString: previousState.inString,
-      openingString: false,
-      closingString: false,
-      inCode: previousState.inCode,
-      inJoiningCode: previousState.inJoiningCode,
-      char: content[i],
-      lastChar: i === content.length - 1,
-      inFunctionCall: previousState.inFunctionCall,
-      inAssignment: previousState.inAssignment
-    };
-
-    if (currentState.char === "\"") {
-      currentState.inString = true;
-      currentState.inCode = false;
-      currentState.inJoiningCode = false;
-      if (previousState.inString) {
-        currentState.closingString = true;
-      } else {
-        currentState.openingString = true;
-      }
-    }
-
-    if (previousState.closingString) {
-      currentState.inString = false;
-      currentState.inCode = false;
-      currentState.inJoiningCode = false;
-    }
-
-    if (!currentState.inString) {
-      if (!currentState.inFunctionCall && (currentState.char === " " || currentState.char === "+")) {
-        currentState.inJoiningCode = true;
-        currentState.inCode = false;
-      } else {
-        if (currentState.char === "(") {
-          currentState.inFunctionCall = true;
-          openParenthesis++;
-          if (startOfParameter === -1) {
-            startOfParameter = i;
-          }
-        }
-        if (currentState.char === ")") {
-          currentState.inFunctionCall = false;
-          if (startOfParameter > -1 && openParenthesis === 1) {
-            const candidate = content.slice(startOfParameter + 1, i).trim();
-            if (isStringConcat(candidate)) {
-              results.push(candidate);
-              startOfParameter = -1;
-            } else {
-              // That's not a binary expression! Let's see if we can find one inside it.
-              const nested = findFunctionParams(candidate);
-              nested.forEach((n) => {
-                results.push(n);
-              });
-            }
-          }
-          openParenthesis--;
-        }
-        if (currentState.char === ",") {
-          if (startOfParameter > -1 && openParenthesis === 1) {
-            results.push(content.slice(startOfParameter + 1, i).trim());
-            startOfParameter = i;
-          }
-        }
-        currentState.inJoiningCode = false;
-        currentState.inCode = true;
-      }
-    }
-  }
-
-  return results;
-}
-
-function findReturnValues(content) {
-  let matches = content.match(/(?=return\s*).*(?=;)/gi);
-  if (!matches) {
+function findInNode(node) {
+  if (!node) {
     return [];
   }
-  matches = matches.map((match) => {
-    return match.replace(/^return\s*/gi, "");
-  });
 
-  return matches.filter((match) => {
-    const candidate = match.replace(/^return\s*/gi, "");
-    return isStringConcat(candidate);
-  });
-}
-
-function isStringConcat(content) {
-  try {
-    const parsedCandidate = jsep(content);
-    return isStringConcatExpression(parsedCandidate);
-  } catch (err) {
-    return false;
+  switch (node.type) {
+      case "Program":
+          return findInProgram(node);
+      case "VariableDeclaration":
+          return findInVariableDeclaration(node);
+      case "VariableDeclarator":
+          return findInVariableDeclarator(node);
+      case "Literal":
+          return [];
+      case "BinaryExpression":
+          return findInBinaryExpression(node);
+      case "ExpressionStatement":
+          return findInExpressionStatement(node);
+      case "CallExpression":
+          return findInCallExpression(node);
+      case "ObjectExpression":
+          return findInObjectExpression(node);
+      case "Property":
+          return findInProperty(node);
+      case "ReturnStatement":
+          return findInReturnStatement(node);
+      case "FunctionDeclaration":
+          return findInFunctionDeclaration(node);
+      case "BlockStatement":
+          return findInBlockStatement(node);
+      case "IfStatement":
+          return findInIfStatement(node);
+      case "NewExpression":
+          return findInNewExpression(node);
+      default:
+          return [];
   }
 }
 
-function isStringConcatExpression(expression) {
-  if (expression.type !== "BinaryExpression") {
-    return false;
+function findInProgram(node) {
+  const values = node.body.map((bodyPart) => {
+    return findInNode(bodyPart);
+  });
+
+  return [].concat.apply([], values);
+}
+
+function findInVariableDeclaration(node) {
+  const values = node.declarations.map((declaration) => {
+    return findInNode(declaration);
+  });
+  return [].concat.apply([], values);
+}
+
+function findInVariableDeclarator(node) {
+  return findInNode(node.init);
+}
+
+function findInBinaryExpression(node) {
+  if (node.operator !== "+") {
+    return [];
+  }
+  if (node.left.type === "Literal" && typeof node.left.value === "string") {
+    return [node];
   }
 
-  if (expression.left.type === "Literal" && typeof expression.left.value === "string") {
-    return true;
+  if (node.right.type === "Literal" && typeof node.right.value === "string") {
+    return [node];
   }
 
-  if (expression.right.type === "Literal" && typeof expression.right.value === "string") {
-    return true;
+  const leftConcat = findInNode(node.left);
+  if (leftConcat.length > 0) {
+    return [node];
   }
 
-  if (isStringConcatExpression(expression.left)) {
-    return true;
-  }
+  return [];
+}
 
-  if (isStringConcatExpression(expression.right)) {
-    return true;
-  }
+function findInExpressionStatement(node) {
+  return findInNode(node.expression);
+}
 
-  return false;
+function findInCallExpression(node) {
+  const values = node.arguments.map((argument) => {
+    return findInNode(argument);
+  });
+  return [].concat.apply([], values);
+}
+
+function findInObjectExpression(node) {
+  const values = node.properties.map((property) => {
+    return findInNode(property);
+  });
+  return [].concat.apply([], values);
+}
+
+function findInProperty(node) {
+  return findInNode(node.value);
+}
+
+function findInReturnStatement(node) {
+  return findInNode(node.argument);
+}
+
+function findInFunctionDeclaration(node) {
+  return findInNode(node.body);
+}
+
+function findInBlockStatement(node) {
+  const values = node.body.map((bodyPart) => {
+    return findInNode(bodyPart);
+  });
+
+  return [].concat.apply([], values);
+}
+
+function findInIfStatement(node) {
+  return findInNode(node.test).concat(findInNode(node.consequent));
+}
+
+function findInNewExpression(node) {
+  const values = node.arguments.map((argument) => {
+    return findInNode(argument);
+  });
+  return [].concat.apply([], values);
 }
 
 module.exports = {

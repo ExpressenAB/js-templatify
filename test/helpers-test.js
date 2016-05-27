@@ -63,6 +63,16 @@ describe("helpers.findStringConcatenations", () => {
     result.should.be.empty;
   });
 
+  it("should return [] for 'if (new Date().getHours() < 10) {\ngreeting = \"Good morning\";\n}'", () => {
+    const result = helpers.findStringConcatenations("if (new Date().getHours() < 10) {\ngreeting = \"Good morning\";\n}");
+    result.should.be.empty;
+  });
+
+  it("should return [] for 'typeof reference === \"string\"'", () => {
+    const result = helpers.findStringConcatenations("typeof reference === \"string\"");
+    result.should.be.empty;
+  });
+
   it("should return [] for 'return (Object.keys(query).length > 0) ? \"?\" + qs.unescape(qs.stringify(query)) : \"\";' as it doesn't handle terniary expressions", () => {
     const result = helpers.findStringConcatenations("return (Object.keys(query).length > 0) ? \"?\" + qs.unescape(qs.stringify(query)) : \"\";");
     result.should.be.empty;
@@ -72,6 +82,9 @@ describe("helpers.findStringConcatenations", () => {
     { input: "var myVar = \"Hello there \" + name;", expected: "\"Hello there \" + name" },
     { input: "var myVar = \"Hello there \"+name;", expected: "\"Hello there \"+name" },
     { input: "var myVar = name + \" is your name\";", expected: "name + \" is your name\"" },
+    { input: "var myVar = \"Hello there \" + name + \"!\";", expected: "\"Hello there \" + name + \"!\"" },
+    { input: "var myVar = \"Hello there \" + name + \"! I'm: \" + me;", expected: "\"Hello there \" + name + \"! I'm: \" + me" },
+    { input: "var myVar = name + \", nice to meet you. I'm \" + me + \".\";", expected: "name + \", nice to meet you. I'm \" + me + \".\"" },
     { input: "var myVar = \"Hello there \" + getName();", expected: "\"Hello there \" + getName()" },
     { input: "var myVar = \"Hello there \" + getName(someVar);", expected: "\"Hello there \" + getName(someVar)" },
     { input: "var myVar = \"Hello there \" + getName(someVar, someOtherVar);", expected: "\"Hello there \" + getName(someVar, someOtherVar)" },
