@@ -73,11 +73,6 @@ describe("helpers.findStringConcatenations", () => {
     result.should.be.empty;
   });
 
-  it("should return [] for 'return (Object.keys(query).length > 0) ? \"?\" + qs.unescape(qs.stringify(query)) : \"\";' as it doesn't handle terniary expressions", () => {
-    const result = helpers.findStringConcatenations("return (Object.keys(query).length > 0) ? \"?\" + qs.unescape(qs.stringify(query)) : \"\";");
-    result.should.be.empty;
-  });
-
   const assertions = [
     { input: "var myVar = \"Hello there \" + name;", expected: "\"Hello there \" + name" },
     { input: "var myVar = \"Hello there \"+name;", expected: "\"Hello there \"+name" },
@@ -106,7 +101,8 @@ describe("helpers.findStringConcatenations", () => {
     { input: "var message = {\nsomeProp: \"some value\",\ngreeting: \"Hello \" + name};", expected: "\"Hello \" + name" },
     { input: "return uppercase(\"Hello \" + name);", expected: "\"Hello \" + name" },
     { input: "return \"Hello \" + name;", expected: "\"Hello \" + name"},
-    { input: "return req.protocol + \"://\" + req.get(\"host\");", expected: "req.protocol + \"://\" + req.get(\"host\")"}
+    { input: "return req.protocol + \"://\" + req.get(\"host\");", expected: "req.protocol + \"://\" + req.get(\"host\")"},
+    { input: "return (Object.keys(query).length > 0) ? \"?\" + qs.unescape(qs.stringify(query)) : \"\";", expected: "\"?\" + qs.unescape(qs.stringify(query))"}
   ];
 
   assertions.forEach((assertion) => {

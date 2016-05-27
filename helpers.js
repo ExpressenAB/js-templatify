@@ -140,6 +140,8 @@ function findInNode(node) {
           return findInIfStatement(node);
       case "NewExpression":
           return findInNewExpression(node);
+      case "ConditionalExpression":
+          return findInConditionalExpression(node);
       default:
           return [];
   }
@@ -231,6 +233,10 @@ function findInNewExpression(node) {
     return findInNode(argument);
   });
   return [].concat.apply([], values);
+}
+
+function findInConditionalExpression(node) {
+  return findInNode(node.test).concat(findInNode(node.consequent));
 }
 
 module.exports = {
