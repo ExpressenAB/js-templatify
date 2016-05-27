@@ -63,6 +63,11 @@ describe("helpers.findStringConcatenations", () => {
     result.should.be.empty;
   });
 
+  it("should return [] for 'return (Object.keys(query).length > 0) ? \"?\" + qs.unescape(qs.stringify(query)) : \"\";' as it doesn't handle terniary expressions", () => {
+    const result = helpers.findStringConcatenations("return (Object.keys(query).length > 0) ? \"?\" + qs.unescape(qs.stringify(query)) : \"\";");
+    result.should.be.empty;
+  });
+
   const assertions = [
     { input: "var myVar = \"Hello there \" + name;", expected: "\"Hello there \" + name" },
     { input: "var myVar = \"Hello there \"+name;", expected: "\"Hello there \"+name" },
