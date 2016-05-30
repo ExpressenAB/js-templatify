@@ -1,97 +1,19 @@
 "use strict";
 const acorn = require("acorn");
 
-function replaceCode(originalConcat) {
-  let result = "";
-  let previousState = {
-    inString: false,
-    openingString: false,
-    closingString: false,
-    inCode: false,
-    inJoiningCode: false,
-    char: undefined,
-    lastChar: false,
-    inFunctionCall: false
-  };
-  let currentState = {
-    inString: false,
-    openingString: false,
-    closingString: false,
-    inCode: false,
-    inJoiningCode: false,
-    char: undefined,
-    lastChar: false,
-    inFunctionCall: false
-  };
-  for (let i = 0; i < originalConcat.length; i++) {
-    previousState = currentState;
-    currentState = {
-      inString: previousState.inString,
-      openingString: false,
-      closingString: false,
-      inCode: previousState.inCode,
-      inJoiningCode: previousState.inJoiningCode,
-      char: originalConcat[i],
-      lastChar: i === originalConcat.length - 1,
-      inFunctionCall: previousState.inFunctionCall
-    };
-    if (currentState.char === "\"") {
-      currentState.inString = true;
-      //currentState.inCode = false;
-      currentState.inJoiningCode = false;
-      if (previousState.inString) {
-        currentState.closingString = true;
-      } else {
-        currentState.openingString = true;
-      }
-    }
-
-    if (previousState.closingString) {
-      currentState.inString = false;
-      currentState.inCode = false;
-      currentState.inJoiningCode = false;
-    }
-
-    if (!currentState.inString) {
-      if (!currentState.inFunctionCall && (currentState.char === " " || currentState.char === "+")) {
-        currentState.inJoiningCode = true;
-        currentState.inCode = false;
-      } else {
-        if (currentState.char === "(") {
-          currentState.inFunctionCall = true;
-        }
-        if (currentState.char === ")") {
-          currentState.inFunctionCall = false;
-        }
-        currentState.inJoiningCode = false;
-        currentState.inCode = true;
-      }
-    }
-
-    // console.log(currentState.char);
-    // console.log(currentState.inCode);
-
-    if (i === 0) {
-      result += "`";
-    }
-
-    if (currentState.inCode && !previousState.inCode) {
-      result += "${";
-    }
-
-    if (!currentState.inJoiningCode && ((!currentState.closingString && !currentState.openingString) || currentState.inCode)) {
-      result += currentState.char;
-    }
-
-    if ((!currentState.inCode && previousState.inCode) || (currentState.lastChar && currentState.inCode)) {
-      result += "}";
-    }
-
-    if (i === originalConcat.length - 1) {
-      result += "`";
-    }
+function rewriteNode(content, node) {
+  if (node.type === "Literal") { // TODO: WHAT IF NOT STRING?
+    return content.slice(node.start + 1, node.end - 1);
+  } else if (node.type === "BinaryExpression") {
+    return `${rewriteNode(content, node.left)}${rewriteNode(content, node.right)}`;
+  } else {
+    return `\${${content.slice(node.start, node.end)}}`;
   }
-  return result;
+}
+
+function replaceCode(originalConcat) {
+  const topNode = acorn.parse(originalConcat).body[0].expression;
+  return `\`${rewriteNode(originalConcat, topNode.left)}${rewriteNode(originalConcat, topNode.right)}\``;
 }
 
 function findStringConcatenations(content) {
