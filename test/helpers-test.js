@@ -45,6 +45,12 @@ describe("helpers.replaceCode", () => {
     const result = helpers.replaceCode(original);
     result.should.equal("`${req.protocol}://${req.get(\"host\")}`");
   });
+
+  it("should replace '\"result: \" + c' with template string", () => {
+    const original = "\"result: \" + c";
+    const result = helpers.replaceCode(original);
+    result.should.equal("`result: ${c}`");
+  });
 });
 
 describe("helpers.findStringConcatenations", () => {

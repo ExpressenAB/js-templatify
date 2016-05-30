@@ -83,7 +83,7 @@ function replaceCode(originalConcat) {
       result += currentState.char;
     }
 
-    if ((!currentState.inCode || currentState.lastChar) && previousState.inCode) {
+    if ((!currentState.inCode && previousState.inCode) || (currentState.lastChar && currentState.inCode)) {
       result += "}";
     }
 
