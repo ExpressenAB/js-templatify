@@ -1,0 +1,1 @@
+var myVar = name || `${alias}-${Date.now()}`;

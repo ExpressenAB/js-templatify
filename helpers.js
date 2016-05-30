@@ -82,6 +82,8 @@ function findInNode(node) {
           return findInSwitchCase(node);
       case "MemberExpression":
           return findInMemberExpression(node);
+      case "LogicalExpression":
+          return findInLogicalExpression(node);
       default:
           return [];
   }
@@ -221,6 +223,10 @@ function findInSwitchCase(node) {
 
 function findInMemberExpression(node) {
   return findInNode(node.object).concat(findInNode(node.property));
+}
+
+function findInLogicalExpression(node) {
+  return findInNode(node.left).concat(findInNode(node.right));
 }
 
 module.exports = {
