@@ -72,6 +72,10 @@ function findInNode(node) {
           return findInFunctionExpression(node);
       case "ArrayExpression":
           return findInArrayExpression(node);
+      case "SwitchStatement":
+          return findInSwitchStatement(node);
+      case "SwitchCase":
+          return findInSwitchCase(node);
       default:
           return [];
   }
@@ -184,8 +188,24 @@ function findInFunctionExpression(node) {
 }
 
 function findInArrayExpression(node) {
-  const values = node.elements.map((elements) => {
-    return findInNode(elements);
+  const values = node.elements.map((element) => {
+    return findInNode(element);
+  });
+
+  return [].concat.apply([], values);
+}
+
+function findInSwitchStatement(node) {
+  const values = node.cases.map((switchCase) => {
+    return findInNode(switchCase);
+  });
+
+  return [].concat.apply([], values);
+}
+
+function findInSwitchCase(node) {
+  const values = node.consequent.map((consequent) => {
+    return findInNode(consequent);
   });
 
   return [].concat.apply([], values);
