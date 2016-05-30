@@ -17,6 +17,11 @@ function replaceCode(originalConcat) {
 }
 
 function findStringConcatenations(content) {
+  if (content[0] === "#") {
+    const lines = content.split("\n");
+    lines.splice(0, 1);
+    content = lines.join("\n");
+  }
   const parsed = acorn.parse(content, { locations: true, allowReturnOutsideFunction: true });
   const nodes = findInNode(parsed);
   const extracted = nodes.map((node) => {
