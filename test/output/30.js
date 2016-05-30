@@ -1,0 +1,1 @@
+var myVar = (a === "part1") ? "/part2" : `/${a}`;

@@ -178,7 +178,9 @@ function findInNewExpression(node) {
 }
 
 function findInConditionalExpression(node) {
-  return findInNode(node.test).concat(findInNode(node.consequent));
+  return findInNode(node.test)
+    .concat(findInNode(node.consequent))
+    .concat(findInNode(node.alternate));
 }
 
 function findInThrowStatement(node) {
