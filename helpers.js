@@ -70,6 +70,8 @@ function findInNode(node) {
           return findInAssignmentExpression(node);
       case "FunctionExpression":
           return findInFunctionExpression(node);
+      case "ArrayExpression":
+          return findInArrayExpression(node);
       default:
           return [];
   }
@@ -179,6 +181,14 @@ function findInAssignmentExpression(node) {
 
 function findInFunctionExpression(node) {
   return findInNode(node.body);
+}
+
+function findInArrayExpression(node) {
+  const values = node.elements.map((elements) => {
+    return findInNode(elements);
+  });
+
+  return [].concat.apply([], values);
 }
 
 module.exports = {
