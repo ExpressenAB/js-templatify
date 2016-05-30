@@ -146,6 +146,8 @@ function findInNode(node) {
           return findInThrowStatement(node);
       case "AssignmentExpression":
           return findInAssignmentExpression(node);
+      case "FunctionExpression":
+          return findInFunctionExpression(node);
       default:
           return [];
   }
@@ -251,6 +253,10 @@ function findInThrowStatement(node) {
 
 function findInAssignmentExpression(node) {
   return findInNode(node.left).concat(findInNode(node.right));
+}
+
+function findInFunctionExpression(node) {
+  return findInNode(node.body);
 }
 
 module.exports = {
