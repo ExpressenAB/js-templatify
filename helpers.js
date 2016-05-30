@@ -27,7 +27,6 @@ function findStringConcatenations(content) {
   const extracted = nodes.map((node) => {
     return content.slice(node.start, node.end);
   });
-
   return extracted.filter((extractedConcat) => {
     return extractedConcat.indexOf("\n") === -1;
   });
@@ -81,6 +80,8 @@ function findInNode(node) {
           return findInSwitchStatement(node);
       case "SwitchCase":
           return findInSwitchCase(node);
+      case "MemberExpression":
+          return findInMemberExpression(node);
       default:
           return [];
   }
@@ -133,7 +134,7 @@ function findInCallExpression(node) {
   const values = node.arguments.map((argument) => {
     return findInNode(argument);
   });
-  return [].concat.apply([], values);
+  return [].concat.apply([], values).concat(findInNode(node.callee));
 }
 
 function findInObjectExpression(node) {
@@ -214,6 +215,10 @@ function findInSwitchCase(node) {
   });
 
   return [].concat.apply([], values);
+}
+
+function findInMemberExpression(node) {
+  return findInNode(node.object).concat(findInNode(node.property));
 }
 
 module.exports = {
